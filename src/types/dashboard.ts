@@ -47,3 +47,21 @@ export type CreateCourierOrderPayload = {
   order_status: string;
   date: string;
 };
+
+export type BookingDraft = {
+  email: string;
+  accountName: string;
+  bookingDate: string;
+  fromPlace: string;
+  toPlace: string;
+  pickupPhone: string;
+  pickupAddress: string;
+  parcelType: string;
+  parcelLabel: string;
+  receiverName: string;
+  receiverPhone: string;
+  receiverAddress: string;
+  distance: number;
+  basePrice: number;
+  estimatedPrice: number;
+};

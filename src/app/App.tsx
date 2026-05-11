@@ -4,6 +4,7 @@ import { RegistrationPage } from '../pages/RegistrationPage';
 import { AuthSuccessPage } from '../pages/AuthSuccessPage';
 import { DashboardPage } from '../pages/DashboardPage';
 import { ErrorPage } from '../pages/ErrorPage';
+import { PaymentPage } from '../pages/PaymentPage';
 import { ProtectedRoute } from '../routes/ProtectedRoute';
 
 export function App() {
@@ -19,6 +20,14 @@ export function App() {
         element={
           <ProtectedRoute allowedRole="user">
             <DashboardPage role="user" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/payment/user"
+        element={
+          <ProtectedRoute allowedRole="user">
+            <PaymentPage />
           </ProtectedRoute>
         }
       />

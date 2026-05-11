@@ -1,4 +1,5 @@
-import type { PropsWithChildren } from 'react';
+import { useEffect, useState, type PropsWithChildren } from 'react';
+import { fetchAccountProfile } from '../../api/profileApi';
 import emptyAvatar from '../../assets/dashboard/empty-avatar.svg';
 import type { DashboardRole, DashboardService, DashboardServiceId } from '../../types/dashboard';
 import { useAuth } from '../../hooks/useAuth';
@@ -24,8 +25,37 @@ export function AppShell({
   children,
 }: AppShellProps) {
   const { session, logout } = useAuth();
-  const activeService =
-    services.find((service) => service.id === activeServiceId) || services[0];
+  const [displayName, setDisplayName] = useState('');
+  const sessionEmail = session?.email ?? '';
+  const sessionRole = session?.role;
+
+  useEffect(() => {
+    if (!sessionEmail || !sessionRole) {
+      setDisplayName('');
+      return;
+    }
+
+    const role = sessionRole;
+    const email = sessionEmail;
+
+    const controller = new AbortController();
+
+    async function loadProfileName() {
+      try {
+        const profile = await fetchAccountProfile(role, email, controller.signal);
+        const fullName = `${profile.firstname} ${profile.lastname}`.trim();
+        setDisplayName(fullName || email);
+      } catch {
+        if (!controller.signal.aborted) {
+          setDisplayName(email);
+        }
+      }
+    }
+
+    void loadProfileName();
+
+    return () => controller.abort();
+  }, [sessionEmail, sessionRole]);
 
   return (
     <main className="dashboard-shell">
@@ -55,8 +85,9 @@ export function AppShell({
 
       <section className="dashboard-stage">
         <header className="dashboard-header">
+          <div className="dashboard-header__side" aria-hidden="true" />
+
           <div className="dashboard-header__copy">
-            <span className="eyebrow">{formatRole(role)}</span>
             <h1>{title}</h1>
           </div>
 
@@ -64,8 +95,7 @@ export function AppShell({
             <div className="profile-chip">
               <img src={emptyAvatar} alt="" />
               <div>
-                <strong>{session?.email}</strong>
-                <span>{session?.role}</span>
+                <strong>{displayName || session?.email}</strong>
               </div>
             </div>
 
@@ -74,14 +104,6 @@ export function AppShell({
             </button>
           </div>
         </header>
-
-        <section className="dashboard-banner">
-          <img src={activeService.image} alt="" className="dashboard-banner__image" />
-          <div>
-            <span className="section-label">Selected service</span>
-            <h2>{activeService.label}</h2>
-          </div>
-        </section>
 
         <section className="dashboard-content">{children}</section>
       </section>
