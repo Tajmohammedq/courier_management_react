@@ -5,18 +5,56 @@ import type {
   CreateCourierOrderPayload,
 } from '../types/dashboard';
 
+const ROUTE_CACHE_KEY = 'courier-management-routes';
+
 type RouteAvailabilityResponse = {
   message?: string;
   price?: string;
 };
 
+function loadCachedRoutes() {
+  const rawValue = localStorage.getItem(ROUTE_CACHE_KEY);
+
+  if (!rawValue) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(rawValue) as CourierRouteOption[];
+  } catch {
+    localStorage.removeItem(ROUTE_CACHE_KEY);
+    return null;
+  }
+}
+
+function saveCachedRoutes(routes: CourierRouteOption[]) {
+  localStorage.setItem(ROUTE_CACHE_KEY, JSON.stringify(routes));
+}
+
+export async function fetchRoutes(signal?: AbortSignal) {
+  const cachedRoutes = loadCachedRoutes();
+
+  try {
+    const data =
+      (await apiRequest<CourierRouteOption[]>({
+        target: 'mvc',
+        path: '/origindata',
+        signal,
+      })) || [];
+
+    saveCachedRoutes(data);
+    return data;
+  } catch (error) {
+    if (cachedRoutes?.length) {
+      return cachedRoutes;
+    }
+
+    throw error;
+  }
+}
+
 export async function fetchOrigins(signal?: AbortSignal) {
-  const data =
-    (await apiRequest<CourierRouteOption[]>({
-      target: 'mvc',
-      path: '/origindata',
-      signal,
-    })) || [];
+  const data = await fetchRoutes(signal);
 
   return [...new Set(data.map((route) => route.from_location.trim()))].sort((left, right) =>
     left.localeCompare(right),
@@ -24,12 +62,7 @@ export async function fetchOrigins(signal?: AbortSignal) {
 }
 
 export async function fetchDestinations(origin: string, signal?: AbortSignal) {
-  const data =
-    (await apiRequest<CourierRouteOption[]>({
-      target: 'mvc',
-      path: '/origindata',
-      signal,
-    })) || [];
+  const data = await fetchRoutes(signal);
 
   return [
     ...new Set(
@@ -47,17 +80,19 @@ export async function fetchRouteQuote(
   destination: string,
   signal?: AbortSignal,
 ): Promise<CourierRouteQuote> {
-  const encodedOrigin = encodeURIComponent(origin);
-  const encodedDestination = encodeURIComponent(destination);
-  const data =
-    (await apiRequest<RouteAvailabilityResponse>({
-      target: 'mvc',
-      path: `/checkorigin/${encodedOrigin}/${encodedDestination}`,
-      signal,
-    })) || {};
+  const data = await fetchRoutes(signal);
+  const matchingRoute = data.find(
+    (route) =>
+      route.from_location.trim().toLowerCase() === origin.trim().toLowerCase() &&
+      route.to_location.trim().toLowerCase() === destination.trim().toLowerCase(),
+  );
 
-  const canDeliver = data.message === 'true';
-  const price = canDeliver && data.price ? Number(data.price) : null;
+  const routeAvailability: RouteAvailabilityResponse = matchingRoute
+    ? { message: 'true', price: String(matchingRoute.price) }
+    : {};
+
+  const canDeliver = routeAvailability.message === 'true';
+  const price = canDeliver && routeAvailability.price ? Number(routeAvailability.price) : null;
 
   return {
     canDeliver,
@@ -65,7 +100,7 @@ export async function fetchRouteQuote(
     message:
       canDeliver && price !== null
         ? 'Route confirmed. This lane is ready for booking.'
-        : data.message || 'We could not confirm this route right now.',
+        : 'We could not confirm this route right now.',
   };
 }
 

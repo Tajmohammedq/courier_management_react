@@ -31,4 +31,12 @@ export type AuthSession = {
   refreshToken: string;
 };
 
+export type AccountProfile = {
+  email: string;
+  firstname: string;
+  lastname: string;
+  phone: string;
+  image?: string;
+};
+
 export type AuthSuccessFlow = 'login' | 'registration';

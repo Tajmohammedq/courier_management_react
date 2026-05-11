@@ -1,71 +1,110 @@
 import { useEffect, useState } from 'react';
-import { createCourierOrder, fetchDestinations, fetchOrigins, fetchRouteQuote } from '../../api/courierApi';
+import { useNavigate } from 'react-router-dom';
+import { fetchRoutes } from '../../api/courierApi';
+import { fetchAccountProfile } from '../../api/profileApi';
 import { useAuth } from '../../hooks/useAuth';
-import type { CourierRouteQuote } from '../../types/dashboard';
+import type { BookingDraft, CourierRouteOption } from '../../types/dashboard';
+import { saveBookingDraft } from '../../utils/bookingDraftStorage';
+import { getPaymentPath } from '../../utils/routing';
 import { ErrorState } from './ErrorState';
 
 type BookingFormState = {
   fromPlace: string;
   toPlace: string;
-  fromName: string;
-  fromPhone: string;
-  fromAddress: string;
-  toName: string;
-  toPhone: string;
-  toAddress: string;
-  item: string;
+  pickupPhone: string;
+  pickupAddress: string;
+  parcelType: string;
+  receiverName: string;
+  receiverPhone: string;
+  receiverAddress: string;
+};
+
+type ParcelTypeOption = {
+  value: string;
+  label: string;
+  surcharge: number;
 };
 
 const INITIAL_FORM_STATE: BookingFormState = {
   fromPlace: '',
   toPlace: '',
-  fromName: '',
-  fromPhone: '',
-  fromAddress: '',
-  toName: '',
-  toPhone: '',
-  toAddress: '',
-  item: '',
+  pickupPhone: '',
+  pickupAddress: '',
+  parcelType: '',
+  receiverName: '',
+  receiverPhone: '',
+  receiverAddress: '',
 };
 
+const PARCEL_TYPES: ParcelTypeOption[] = [
+  { value: 'document', label: 'Document', surcharge: 0 },
+  { value: 'small-package', label: 'Small Package', surcharge: 30 },
+  { value: 'medium-package', label: 'Medium Package', surcharge: 60 },
+  { value: 'large-package', label: 'Large Package', surcharge: 100 },
+  { value: 'fragile-item', label: 'Fragile Item', surcharge: 120 },
+];
+
+function normalizePlace(value: string) {
+  return value.trim().toLowerCase();
+}
+
 function buildTodayLabel() {
-  return new Date().toISOString().slice(0, 10);
+  const now = new Date();
+  const localDate = new Date(now.getTime() - now.getTimezoneOffset() * 60_000);
+  return localDate.toISOString().slice(0, 10);
+}
+
+function getUniquePlaces(routes: CourierRouteOption[], key: 'from_location' | 'to_location') {
+  return [...new Set(routes.map((route) => route[key].trim()))].sort((left, right) =>
+    left.localeCompare(right),
+  );
 }
 
 export function BookCourierPanel() {
   const { session } = useAuth();
+  const navigate = useNavigate();
+  const bookingDate = buildTodayLabel();
+  const sessionEmail = session?.email ?? '';
+  const sessionRole = session?.role;
+
   const [form, setForm] = useState(INITIAL_FORM_STATE);
-  const [origins, setOrigins] = useState<string[]>([]);
-  const [destinations, setDestinations] = useState<string[]>([]);
+  const [routes, setRoutes] = useState<CourierRouteOption[]>([]);
   const [loadError, setLoadError] = useState('');
-  const [routeQuote, setRouteQuote] = useState<CourierRouteQuote | null>(null);
-  const [routeLoading, setRouteLoading] = useState(false);
-  const [submitMessage, setSubmitMessage] = useState('');
   const [submitError, setSubmitError] = useState('');
   const [isBootstrapping, setIsBootstrapping] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showOriginSuggestions, setShowOriginSuggestions] = useState(false);
+  const [showDestinationSuggestions, setShowDestinationSuggestions] = useState(false);
+  const [accountName, setAccountName] = useState('');
 
   function updateField(field: keyof BookingFormState, value: string) {
+    setSubmitError('');
     setForm((current) => ({
       ...current,
       [field]: value,
     }));
   }
 
+  function handleOriginChange(value: string) {
+    setSubmitError('');
+    setForm((current) => ({
+      ...current,
+      fromPlace: value,
+      toPlace: '',
+    }));
+    setShowOriginSuggestions(value.trim().length > 0);
+    setShowDestinationSuggestions(false);
+  }
+
   useEffect(() => {
     const controller = new AbortController();
 
-    async function loadOrigins() {
+    async function loadRoutes() {
       setIsBootstrapping(true);
       setLoadError('');
 
       try {
-        const nextOrigins = await fetchOrigins(controller.signal);
-        setOrigins(nextOrigins);
-        setForm((current) => ({
-          ...current,
-          fromPlace: current.fromPlace || nextOrigins[0] || '',
-        }));
+        const nextRoutes = await fetchRoutes(controller.signal);
+        setRoutes(nextRoutes);
       } catch (error) {
         if (controller.signal.aborted) {
           return;
@@ -83,139 +122,111 @@ export function BookCourierPanel() {
       }
     }
 
-    void loadOrigins();
+    void loadRoutes();
 
     return () => controller.abort();
   }, []);
 
   useEffect(() => {
-    if (!form.fromPlace) {
-      setDestinations([]);
+    if (!sessionEmail || !sessionRole) {
+      setAccountName('');
       return;
     }
 
-    const controller = new AbortController();
-
-    async function loadDestinations() {
-      setLoadError('');
-      setDestinations([]);
-      setRouteQuote(null);
-
-      try {
-        const nextDestinations = await fetchDestinations(form.fromPlace, controller.signal);
-        setDestinations(nextDestinations);
-        setForm((current) => ({
-          ...current,
-          toPlace: nextDestinations.includes(current.toPlace) ? current.toPlace : nextDestinations[0] || '',
-        }));
-      } catch (error) {
-        if (controller.signal.aborted) {
-          return;
-        }
-
-        setLoadError(
-          error instanceof Error
-            ? error.message
-            : 'We could not load destinations for this origin.',
-        );
-      }
-    }
-
-    void loadDestinations();
-
-    return () => controller.abort();
-  }, [form.fromPlace]);
-
-  useEffect(() => {
-    if (!form.fromPlace || !form.toPlace) {
-      setRouteQuote(null);
-      return;
-    }
+    const role = sessionRole;
+    const email = sessionEmail;
 
     const controller = new AbortController();
 
-    async function loadQuote() {
-      setRouteLoading(true);
-      setRouteQuote(null);
-
+    async function loadAccountName() {
       try {
-        const nextQuote = await fetchRouteQuote(form.fromPlace, form.toPlace, controller.signal);
-        setRouteQuote(nextQuote);
-      } catch (error) {
-        if (controller.signal.aborted) {
-          return;
-        }
-
-        setRouteQuote({
-          canDeliver: false,
-          message:
-            error instanceof Error
-              ? error.message
-              : 'We could not confirm this route right now.',
-          price: null,
-        });
-      } finally {
+        const profile = await fetchAccountProfile(role, email, controller.signal);
+        const fullName = `${profile.firstname} ${profile.lastname}`.trim();
+        setAccountName(fullName || email);
+      } catch {
         if (!controller.signal.aborted) {
-          setRouteLoading(false);
+          setAccountName(email);
         }
       }
     }
 
-    void loadQuote();
+    void loadAccountName();
 
     return () => controller.abort();
-  }, [form.fromPlace, form.toPlace]);
+  }, [sessionEmail, sessionRole]);
+
+  const normalizedOrigin = normalizePlace(form.fromPlace);
+  const normalizedDestination = normalizePlace(form.toPlace);
+
+  const originSuggestions = getUniquePlaces(routes, 'from_location').filter((origin) =>
+    normalizePlace(origin).includes(normalizedOrigin),
+  );
+
+  const originRoutes = routes.filter(
+    (route) => normalizePlace(route.from_location) === normalizedOrigin,
+  );
+  const hasExactOrigin = originRoutes.length > 0;
+
+  const destinationSuggestions = getUniquePlaces(originRoutes, 'to_location').filter((destination) =>
+    normalizePlace(destination).includes(normalizedDestination),
+  );
+
+  const shouldShowOriginSuggestions =
+    showOriginSuggestions && form.fromPlace.trim().length > 0 && originSuggestions.length > 0;
+  const shouldShowDestinationSuggestions =
+    showDestinationSuggestions && form.toPlace.trim().length > 0 && destinationSuggestions.length > 0;
+
+  const selectedRoute =
+    originRoutes.find(
+      (route) => normalizePlace(route.to_location) === normalizedDestination,
+    ) || null;
+
+  const selectedParcelType =
+    PARCEL_TYPES.find((parcelType) => parcelType.value === form.parcelType) || null;
+
+  const basePrice = selectedRoute?.price ?? null;
+  const estimatedPrice =
+    basePrice !== null && selectedParcelType
+      ? basePrice + selectedParcelType.surcharge
+      : null;
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSubmitError('');
-    setSubmitMessage('');
 
     if (!session?.email) {
       setSubmitError('Your session is missing. Please sign in again.');
       return;
     }
 
-    if (!routeQuote?.canDeliver) {
-      setSubmitError('Please choose a route that can be delivered before submitting.');
+    if (!selectedRoute || !selectedParcelType || estimatedPrice === null) {
+      setSubmitError('Choose a supported route and parcel type before continuing.');
       return;
     }
 
-    setIsSubmitting(true);
+    const draft: BookingDraft = {
+      email: session.email,
+      accountName: (accountName || session.email).trim(),
+      bookingDate,
+      fromPlace: selectedRoute.from_location.trim(),
+      toPlace: selectedRoute.to_location.trim(),
+      pickupPhone: form.pickupPhone.trim(),
+      pickupAddress: form.pickupAddress.trim(),
+      parcelType: selectedParcelType.value,
+      parcelLabel: selectedParcelType.label,
+      receiverName: form.receiverName.trim(),
+      receiverPhone: form.receiverPhone.trim(),
+      receiverAddress: form.receiverAddress.trim(),
+      distance: selectedRoute.distance,
+      basePrice: selectedRoute.price,
+      estimatedPrice,
+    };
 
-    try {
-      await createCourierOrder({
-        email: session.email,
-        from_place: form.fromPlace,
-        from_name: form.fromName.trim(),
-        from_phone: form.fromPhone.trim(),
-        from_address: form.fromAddress.trim(),
-        to_place: form.toPlace,
-        to_name: form.toName.trim(),
-        to_phone: form.toPhone.trim(),
-        to_address: form.toAddress.trim(),
-        item: form.item.trim(),
-        status: 'Booked',
-        order_status: 'Pending',
-        date: buildTodayLabel(),
-      });
-
-      setSubmitMessage('Courier booked successfully. You can review it in Active Orders next.');
-      setForm((current) => ({
-        ...INITIAL_FORM_STATE,
-        fromPlace: current.fromPlace,
-        toPlace: current.toPlace,
-      }));
-    } catch (error) {
-      setSubmitError(
-        error instanceof Error ? error.message : 'We could not create the courier order right now.',
-      );
-    } finally {
-      setIsSubmitting(false);
-    }
+    saveBookingDraft(draft);
+    navigate(getPaymentPath('user'));
   }
 
-  if (loadError && !origins.length) {
+  if (loadError && !routes.length) {
     return (
       <ErrorState
         title="Booking data is unavailable"
@@ -225,165 +236,196 @@ export function BookCourierPanel() {
   }
 
   return (
-    <section className="service-grid">
-      <article className="service-card booking-card">
+    <>
+      <form className="service-card booking-single" onSubmit={handleSubmit}>
         <div className="service-card__header">
           <div>
-            <span className="section-label">First service</span>
+            <span className="section-label">User booking</span>
             <h3>Book Courier</h3>
-            <p>Pick a route, confirm price availability, and submit the shipment in one flow.</p>
-          </div>
-          <div className="booking-pill-group">
-            <span className="placeholder-pill">{session?.email}</span>
-            <span className="placeholder-pill">Date {buildTodayLabel()}</span>
           </div>
         </div>
 
-        {isBootstrapping ? (
-          <p className="panel-note">Loading available routes...</p>
-        ) : null}
+        {isBootstrapping ? <p className="panel-note">Loading delivery lanes...</p> : null}
 
-        <form className="auth-form" onSubmit={handleSubmit}>
-          <div className="form-grid">
-            <label className="field">
-              <span>From location</span>
-              <select
-                value={form.fromPlace}
-                onChange={(event) => updateField('fromPlace', event.target.value)}
-                required
+        <div className="booking-main-grid">
+          <section className="booking-pane booking-pane--pickup">
+            <div className="booking-pane__header">
+              <h4>Pickup details</h4>
+            </div>
+
+            <div className="form-grid booking-compact-grid">
+              <label className="field">
+                <span>From location</span>
+                <div className="autocomplete-field">
+                  <input
+                    value={form.fromPlace}
+                    onChange={(event) => handleOriginChange(event.target.value)}
+                    onFocus={() => setShowOriginSuggestions(false)}
+                    onBlur={() => {
+                      window.setTimeout(() => setShowOriginSuggestions(false), 120);
+                    }}
+                    placeholder="Search pickup zone"
+                    autoComplete="off"
+                    required
+                  />
+                  {shouldShowOriginSuggestions ? (
+                    <div className="autocomplete-menu" role="listbox" aria-label="Pickup locations">
+                      {originSuggestions.map((origin) => (
+                        <button
+                          key={origin}
+                          type="button"
+                          className="autocomplete-option"
+                          onMouseDown={(event) => {
+                            event.preventDefault();
+                            handleOriginChange(origin);
+                            setShowOriginSuggestions(false);
+                          }}
+                        >
+                          {origin}
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+              </label>
+
+              <label className="field">
+                <span>To location</span>
+                <div className="autocomplete-field">
+                  <input
+                    value={form.toPlace}
+                    onChange={(event) => {
+                      updateField('toPlace', event.target.value);
+                      setShowDestinationSuggestions(event.target.value.trim().length > 0);
+                    }}
+                    onFocus={() => setShowDestinationSuggestions(false)}
+                    onBlur={() => {
+                      window.setTimeout(() => setShowDestinationSuggestions(false), 120);
+                    }}
+                    placeholder={hasExactOrigin ? 'Search destination zone' : 'Choose pickup zone first'}
+                    autoComplete="off"
+                    disabled={!hasExactOrigin}
+                    required
+                  />
+                  {shouldShowDestinationSuggestions ? (
+                    <div className="autocomplete-menu" role="listbox" aria-label="Destination locations">
+                      {destinationSuggestions.map((destination) => (
+                        <button
+                          key={destination}
+                          type="button"
+                          className="autocomplete-option"
+                          onMouseDown={(event) => {
+                            event.preventDefault();
+                            updateField('toPlace', destination);
+                            setShowDestinationSuggestions(false);
+                          }}
+                        >
+                          {destination}
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+              </label>
+
+              <label className="field">
+                <span>Pickup phone</span>
+                <input
+                  type="tel"
+                  inputMode="tel"
+                  value={form.pickupPhone}
+                  onChange={(event) => updateField('pickupPhone', event.target.value)}
+                  placeholder="Enter pickup phone number"
+                  required
+                />
+              </label>
+
+              <label className="field">
+                <span>Parcel type</span>
+                <select
+                  value={form.parcelType}
+                  onChange={(event) => updateField('parcelType', event.target.value)}
+                  required
+                >
+                  <option value="">Select parcel type</option>
+                  {PARCEL_TYPES.map((parcelType) => (
+                    <option key={parcelType.value} value={parcelType.value}>
+                      {parcelType.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="field field--full">
+                <span>Pickup address</span>
+                <textarea
+                  value={form.pickupAddress}
+                  onChange={(event) => updateField('pickupAddress', event.target.value)}
+                  placeholder="Enter pickup address"
+                  rows={2}
+                  required
+                />
+              </label>
+            </div>
+          </section>
+
+          <div className="booking-side-column">
+            <section className="booking-pane booking-pane--receiver">
+              <div className="booking-pane__header">
+                <h4>Receiver details</h4>
+              </div>
+
+              <div className="form-grid booking-compact-grid">
+                <label className="field">
+                  <span>Receiver name</span>
+                  <input
+                    value={form.receiverName}
+                    onChange={(event) => updateField('receiverName', event.target.value)}
+                    placeholder="Enter receiver name"
+                    required
+                  />
+                </label>
+
+                <label className="field">
+                  <span>Receiver phone</span>
+                  <input
+                    type="tel"
+                    inputMode="tel"
+                    value={form.receiverPhone}
+                    onChange={(event) => updateField('receiverPhone', event.target.value)}
+                    placeholder="Enter receiver phone number"
+                    required
+                  />
+                </label>
+
+                <label className="field field--full">
+                  <span>Receiver address</span>
+                  <textarea
+                    value={form.receiverAddress}
+                    onChange={(event) => updateField('receiverAddress', event.target.value)}
+                    placeholder="Enter receiver address"
+                    rows={2}
+                    required
+                  />
+                </label>
+              </div>
+            </section>
+
+            <section className="booking-footer">
+              {submitError ? <p className="form-message is-error">{submitError}</p> : null}
+              {loadError && routes.length ? <p className="form-message is-error">{loadError}</p> : null}
+
+              <button
+                type="submit"
+                className="primary-button booking-submit"
+                disabled={isBootstrapping || !selectedRoute || !selectedParcelType}
               >
-                <option value="">Select origin</option>
-                {origins.map((origin) => (
-                  <option key={origin} value={origin}>
-                    {origin}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className="field">
-              <span>To location</span>
-              <select
-                value={form.toPlace}
-                onChange={(event) => updateField('toPlace', event.target.value)}
-                required
-              >
-                <option value="">Select destination</option>
-                {destinations.map((destination) => (
-                  <option key={destination} value={destination}>
-                    {destination}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className="field">
-              <span>Sender name</span>
-              <input
-                value={form.fromName}
-                onChange={(event) => updateField('fromName', event.target.value)}
-                placeholder="Enter pickup contact name"
-                required
-              />
-            </label>
-
-            <label className="field">
-              <span>Sender phone</span>
-              <input
-                value={form.fromPhone}
-                onChange={(event) => updateField('fromPhone', event.target.value)}
-                placeholder="Enter pickup phone number"
-                required
-              />
-            </label>
-
-            <label className="field field--full">
-              <span>Sender address</span>
-              <input
-                value={form.fromAddress}
-                onChange={(event) => updateField('fromAddress', event.target.value)}
-                placeholder="Enter the pickup address"
-                required
-              />
-            </label>
-
-            <label className="field">
-              <span>Receiver name</span>
-              <input
-                value={form.toName}
-                onChange={(event) => updateField('toName', event.target.value)}
-                placeholder="Enter receiver name"
-                required
-              />
-            </label>
-
-            <label className="field">
-              <span>Receiver phone</span>
-              <input
-                value={form.toPhone}
-                onChange={(event) => updateField('toPhone', event.target.value)}
-                placeholder="Enter receiver phone number"
-                required
-              />
-            </label>
-
-            <label className="field field--full">
-              <span>Receiver address</span>
-              <input
-                value={form.toAddress}
-                onChange={(event) => updateField('toAddress', event.target.value)}
-                placeholder="Enter the delivery address"
-                required
-              />
-            </label>
-
-            <label className="field field--full">
-              <span>Parcel details</span>
-              <input
-                value={form.item}
-                onChange={(event) => updateField('item', event.target.value)}
-                placeholder="Describe the item being shipped"
-                required
-              />
-            </label>
+                Complete Payment
+              </button>
+            </section>
           </div>
-
-          {submitError ? <p className="form-message is-error">{submitError}</p> : null}
-          {submitMessage ? <p className="form-message is-success">{submitMessage}</p> : null}
-
-          <button type="submit" className="primary-button" disabled={isSubmitting || isBootstrapping}>
-            {isSubmitting ? 'Creating booking...' : 'Create courier booking'}
-          </button>
-        </form>
-      </article>
-
-      <article className="service-card booking-summary">
-        <span className="section-label">Route check</span>
-        <h3>Availability and estimate</h3>
-        <p>We check the selected origin and destination before the order is submitted.</p>
-
-        {routeLoading ? <p className="panel-note">Checking route availability...</p> : null}
-
-        {routeQuote ? (
-          <div className={`quote-card ${routeQuote.canDeliver ? 'is-ready' : 'is-blocked'}`}>
-            <strong>{routeQuote.canDeliver ? 'Route available' : 'Route unavailable'}</strong>
-            <p>{routeQuote.message}</p>
-            <span>
-              Estimated price:{' '}
-              <b>{routeQuote.price !== null ? `Rs. ${routeQuote.price}` : 'Not available'}</b>
-            </span>
-          </div>
-        ) : (
-          <div className="quote-card">
-            <strong>Choose a route</strong>
-            <p>Select both locations to fetch delivery availability and price.</p>
-          </div>
-        )}
-
-        {loadError && origins.length ? (
-          <p className="form-message is-error">{loadError}</p>
-        ) : null}
-      </article>
-    </section>
+        </div>
+      </form>
+    </>
   );
 }
