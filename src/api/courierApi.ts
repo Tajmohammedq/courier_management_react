@@ -1,8 +1,10 @@
 import { apiRequest } from './apiClient';
 import type {
+  CancelledOrderPayload,
   CourierRouteOption,
   CourierRouteQuote,
   CreateCourierOrderPayload,
+  UserOrder,
 } from '../types/dashboard';
 
 const ROUTE_CACHE_KEY = 'courier-management-routes';
@@ -106,6 +108,43 @@ export async function createCourierOrder(payload: CreateCourierOrderPayload) {
     path: '/saveorder',
     method: 'POST',
     body: payload,
+    auth: true,
+  });
+}
+
+export async function fetchUserActiveOrders(email: string, signal?: AbortSignal) {
+  return (
+    (await apiRequest<UserOrder[]>({
+      target: 'spring',
+      path: `/user/getorders/${encodeURIComponent(email)}`,
+      auth: true,
+      signal,
+    })) || []
+  );
+}
+
+export async function saveCancelledOrder(payload: CancelledOrderPayload) {
+  await apiRequest<void>({
+    target: 'spring',
+    path: '/user/delete',
+    method: 'POST',
+    body: payload,
+    auth: true,
+  });
+}
+
+export async function removeUserOrder(trackingNumber: number) {
+  await apiRequest<void>({
+    target: 'spring',
+    path: `/user/remove/${trackingNumber}`,
+    auth: true,
+  });
+}
+
+export async function removeTakenOrder(trackingNumber: number) {
+  await apiRequest<void>({
+    target: 'spring',
+    path: `/user/canceltakenorder/${trackingNumber}`,
     auth: true,
   });
 }

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { ActiveOrdersPanel } from '../components/dashboard/ActiveOrdersPanel';
 import { AppShell } from '../components/dashboard/AppShell';
 import { BookCourierPanel } from '../components/dashboard/BookCourierPanel';
 import { PlaceholderPanel } from '../components/dashboard/PlaceholderPanel';
@@ -20,6 +21,10 @@ export function DashboardPage({ role }: DashboardPageProps) {
   function renderPanel() {
     if (role === 'user' && activeServiceId === 'book-courier') {
       return <BookCourierPanel />;
+    }
+
+    if (role === 'user' && activeServiceId === 'active-orders') {
+      return <ActiveOrdersPanel />;
     }
 
     return (

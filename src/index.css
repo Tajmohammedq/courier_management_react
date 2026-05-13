@@ -1066,6 +1066,162 @@ code {
   margin-top: 2px;
 }
 
+.orders-panel__header {
+  margin-bottom: 10px;
+}
+
+.orders-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.orders-empty-state {
+  display: grid;
+  gap: 10px;
+  padding: 18px 20px;
+  border-radius: 22px;
+  border: 1px dashed rgba(15, 118, 110, 0.18);
+  background: rgba(15, 118, 110, 0.04);
+}
+
+.orders-empty-state h4 {
+  margin: 0;
+  font-family: var(--heading);
+  font-size: 1.25rem;
+}
+
+.orders-empty-state p {
+  margin: 0;
+}
+
+.order-card {
+  display: grid;
+  gap: 12px;
+  padding: 16px 18px;
+  border-radius: 22px;
+  border: 1px solid rgba(22, 35, 29, 0.08);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.84), rgba(247, 244, 236, 0.78));
+}
+
+.order-card__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.order-card__route {
+  display: grid;
+  gap: 4px;
+}
+
+.order-card__route strong {
+  font-family: var(--heading);
+  font-size: 1.02rem;
+}
+
+.order-card__subline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.order-card__subline span {
+  margin: 0;
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.92rem;
+  white-space: nowrap;
+}
+
+.status-pill.is-booked {
+  background: rgba(201, 94, 54, 0.12);
+  color: #9f3f1a;
+}
+
+.status-pill.is-assigned {
+  background: rgba(44, 114, 189, 0.12);
+  color: #215f9d;
+}
+
+.status-pill.is-delivery {
+  background: rgba(15, 118, 110, 0.12);
+  color: var(--teal-deep);
+}
+
+.status-pill.is-delivered {
+  background: rgba(22, 35, 29, 0.1);
+  color: var(--ink);
+}
+
+.order-meta-grid,
+.order-address-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.order-address-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.order-meta-grid > div,
+.order-address-card {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  padding: 12px 14px;
+  border-radius: 18px;
+  border: 1px solid rgba(22, 35, 29, 0.08);
+  background: rgba(255, 255, 255, 0.68);
+}
+
+.order-meta-grid span,
+.order-address-card p {
+  color: var(--muted);
+}
+
+.order-meta-grid span,
+.order-address-card .section-label {
+  font-size: 0.82rem;
+}
+
+.order-meta-grid strong {
+  font-family: var(--heading);
+  font-size: 0.96rem;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.order-address-card p {
+  margin: 0;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.order-card__actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.order-card__button {
+  min-height: 44px;
+}
+
 .placeholder-panel,
 .error-state,
 .error-page {
@@ -1122,6 +1278,11 @@ code {
     grid-template-columns: 1fr;
   }
 
+  .order-meta-grid,
+  .order-address-grid {
+    grid-template-columns: 1fr;
+  }
+
   .dashboard-header {
     grid-template-columns: 1fr;
   }
@@ -1157,6 +1318,15 @@ code {
 
   .payment-card__header {
     display: grid;
+  }
+
+  .order-card__top {
+    display: grid;
+  }
+
+  .order-card__subline {
+    display: grid;
+    gap: 4px;
   }
 
   .summary-row {
