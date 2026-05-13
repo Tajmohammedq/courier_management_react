@@ -61,7 +61,24 @@ export type BookingDraft = {
   receiverName: string;
   receiverPhone: string;
   receiverAddress: string;
+};
+
+export type PricingQuoteRequest = {
+  fromPlace: string;
+  toPlace: string;
+  parcelType: string;
+  weightSlab: string;
+};
+
+export type PricingQuote = {
+  fromPlace: string;
+  toPlace: string;
+  parcelType: string;
+  weightSlab: string;
   distance: number;
-  basePrice: number;
-  estimatedPrice: number;
+  baseFee: number;
+  distanceCharge: number;
+  parcelTypeCharge: number;
+  weightCharge: number;
+  total: number;
 };

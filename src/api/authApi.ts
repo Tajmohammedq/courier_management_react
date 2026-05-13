@@ -30,9 +30,21 @@ async function parseApiResponse<T>(response: Response) {
     return null;
   }
 
+  const contentType = response.headers.get('content-type')?.toLowerCase() || '';
+
   try {
     return JSON.parse(text) as T;
   } catch {
+    if (contentType.includes('xml')) {
+      const messageMatch = text.match(/<message>([\s\S]*?)<\/message>/i);
+      const statusMatch = text.match(/<status>([\s\S]*?)<\/status>/i);
+
+      return {
+        ...(messageMatch ? { message: messageMatch[1].trim() } : {}),
+        ...(statusMatch ? { status: statusMatch[1].trim() } : {}),
+      } as T;
+    }
+
     return null;
   }
 }
@@ -42,6 +54,7 @@ export async function login(role: AuthRole, payload: LoginPayload) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      Accept: 'application/json',
     },
     body: JSON.stringify(payload),
   });
@@ -78,6 +91,7 @@ export async function register(role: AuthRole, payload: RegistrationPayload) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      Accept: 'application/json',
     },
     body: JSON.stringify({
       ...payload,
