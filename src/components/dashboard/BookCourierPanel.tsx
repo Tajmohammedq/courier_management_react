@@ -22,7 +22,6 @@ type BookingFormState = {
 type ParcelTypeOption = {
   value: string;
   label: string;
-  surcharge: number;
 };
 
 const INITIAL_FORM_STATE: BookingFormState = {
@@ -37,11 +36,11 @@ const INITIAL_FORM_STATE: BookingFormState = {
 };
 
 const PARCEL_TYPES: ParcelTypeOption[] = [
-  { value: 'document', label: 'Document', surcharge: 0 },
-  { value: 'small-package', label: 'Small Package', surcharge: 30 },
-  { value: 'medium-package', label: 'Medium Package', surcharge: 60 },
-  { value: 'large-package', label: 'Large Package', surcharge: 100 },
-  { value: 'fragile-item', label: 'Fragile Item', surcharge: 120 },
+  { value: 'document', label: 'Document' },
+  { value: 'small-package', label: 'Small Package' },
+  { value: 'medium-package', label: 'Medium Package' },
+  { value: 'large-package', label: 'Large Package' },
+  { value: 'fragile-item', label: 'Fragile Item' },
 ];
 
 function normalizePlace(value: string) {
@@ -184,12 +183,6 @@ export function BookCourierPanel() {
   const selectedParcelType =
     PARCEL_TYPES.find((parcelType) => parcelType.value === form.parcelType) || null;
 
-  const basePrice = selectedRoute?.price ?? null;
-  const estimatedPrice =
-    basePrice !== null && selectedParcelType
-      ? basePrice + selectedParcelType.surcharge
-      : null;
-
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSubmitError('');
@@ -199,7 +192,7 @@ export function BookCourierPanel() {
       return;
     }
 
-    if (!selectedRoute || !selectedParcelType || estimatedPrice === null) {
+    if (!selectedRoute || !selectedParcelType) {
       setSubmitError('Choose a supported route and parcel type before continuing.');
       return;
     }
@@ -217,9 +210,6 @@ export function BookCourierPanel() {
       receiverName: form.receiverName.trim(),
       receiverPhone: form.receiverPhone.trim(),
       receiverAddress: form.receiverAddress.trim(),
-      distance: selectedRoute.distance,
-      basePrice: selectedRoute.price,
-      estimatedPrice,
     };
 
     saveBookingDraft(draft);

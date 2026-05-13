@@ -183,13 +183,13 @@ export function getFriendlyLoginError(message?: string) {
   return message;
 }
 
-export function getFriendlyRegistrationError(role: AuthRole, message?: string) {
+export function getFriendlyRegistrationError(_role: AuthRole, message?: string) {
   if (!message) {
     return authContent.errors.registration.generic;
   }
 
   if (message.includes('already exist')) {
-    return authContent.errors.registration.duplicate[role];
+    return message;
   }
 
   return message;

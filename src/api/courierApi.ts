@@ -34,23 +34,19 @@ function saveCachedRoutes(routes: CourierRouteOption[]) {
 export async function fetchRoutes(signal?: AbortSignal) {
   const cachedRoutes = loadCachedRoutes();
 
-  try {
-    const data =
-      (await apiRequest<CourierRouteOption[]>({
-        target: 'mvc',
-        path: '/origindata',
-        signal,
-      })) || [];
-
-    saveCachedRoutes(data);
-    return data;
-  } catch (error) {
-    if (cachedRoutes?.length) {
-      return cachedRoutes;
-    }
-
-    throw error;
+  if (cachedRoutes?.length) {
+    return cachedRoutes;
   }
+
+  const data =
+    (await apiRequest<CourierRouteOption[]>({
+      target: 'mvc',
+      path: '/origindata',
+      signal,
+    })) || [];
+
+  saveCachedRoutes(data);
+  return data;
 }
 
 export async function fetchOrigins(signal?: AbortSignal) {
