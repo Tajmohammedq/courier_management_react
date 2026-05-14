@@ -39,4 +39,13 @@ export type AccountProfile = {
   image?: string;
 };
 
+export type AccountProfileUpdatePayload = {
+  firstname: string;
+  lastname: string;
+  email: string;
+  phone: string;
+  image?: string;
+  password?: string;
+};
+
 export type AuthSuccessFlow = 'login' | 'registration';

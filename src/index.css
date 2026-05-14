@@ -1233,6 +1233,128 @@ code {
   color: #9f3f1a;
 }
 
+.profile-panel__header {
+  margin-bottom: 6px;
+}
+
+.profile-layout {
+  display: grid;
+  gap: 16px;
+  align-items: start;
+}
+
+.profile-overview,
+.profile-details {
+  display: grid;
+  gap: 14px;
+  padding: 18px 20px;
+  border-radius: 22px;
+  border: 1px solid rgba(22, 35, 29, 0.08);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.profile-overview {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 18px;
+}
+
+.profile-hero__avatar {
+  width: 88px;
+  height: 88px;
+  border-radius: 999px;
+  border: 1px solid rgba(22, 35, 29, 0.08);
+  background: rgba(255, 255, 255, 0.86);
+  padding: 10px;
+}
+
+.profile-overview__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 18px;
+}
+
+.profile-hero__copy {
+  display: grid;
+  gap: 4px;
+}
+
+.profile-hero__copy strong {
+  font-family: var(--heading);
+  font-size: 1.12rem;
+}
+
+.profile-hero__copy span {
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.profile-overview__meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(120px, auto));
+  gap: 16px;
+}
+
+.profile-overview__meta div {
+  display: grid;
+  gap: 4px;
+}
+
+.profile-overview__meta span {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.profile-overview__meta strong {
+  font-family: var(--heading);
+  font-size: 0.96rem;
+}
+
+.profile-details__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.profile-note {
+  margin: 6px 0 0;
+}
+
+.profile-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.profile-password-section {
+  display: grid;
+  gap: 12px;
+}
+
+.profile-password-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.profile-value {
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  padding: 0 1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(22, 35, 29, 0.12);
+  background: rgba(255, 255, 255, 0.72);
+  font-weight: 600;
+}
+
+.profile-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
 .placeholder-panel,
 .error-state,
 .error-page {
@@ -1289,6 +1411,12 @@ code {
     grid-template-columns: 1fr;
   }
 
+  .profile-overview,
+  .profile-overview__body,
+  .profile-overview__meta {
+    grid-template-columns: 1fr;
+  }
+
   .order-meta-grid,
   .order-address-grid {
     grid-template-columns: 1fr;
@@ -1329,6 +1457,18 @@ code {
 
   .payment-card__header {
     display: grid;
+  }
+
+  .profile-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-password-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-overview {
+    justify-items: start;
   }
 
   .order-card__top {
