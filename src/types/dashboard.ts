@@ -96,6 +96,8 @@ export type CancelledOrderPayload = {
   order_status: string;
 };
 
+export type CancelledOrder = CancelledOrderPayload;
+
 export type PricingQuoteRequest = {
   fromPlace: string;
   toPlace: string;

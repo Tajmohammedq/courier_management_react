@@ -1067,7 +1067,7 @@ code {
 }
 
 .orders-panel__header {
-  margin-bottom: 10px;
+  margin-bottom: 6px;
 }
 
 .orders-grid {
@@ -1096,9 +1096,9 @@ code {
 
 .order-card {
   display: grid;
-  gap: 12px;
-  padding: 16px 18px;
-  border-radius: 22px;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 20px;
   border: 1px solid rgba(22, 35, 29, 0.08);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.84), rgba(247, 244, 236, 0.78));
 }
@@ -1117,15 +1117,15 @@ code {
 
 .order-card__route strong {
   font-family: var(--heading);
-  font-size: 1.02rem;
+  font-size: 1rem;
 }
 
 .order-card__subline {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 8px;
   color: var(--muted);
-  font-size: 0.92rem;
+  font-size: 0.88rem;
 }
 
 .order-card__subline span {
@@ -1136,17 +1136,17 @@ code {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 34px;
-  padding: 0 12px;
+  min-height: 32px;
+  padding: 0 11px;
   border-radius: 999px;
   font-weight: 700;
-  font-size: 0.92rem;
+  font-size: 0.88rem;
   white-space: nowrap;
 }
 
 .status-pill.is-booked {
-  background: rgba(201, 94, 54, 0.12);
-  color: #9f3f1a;
+  background: rgba(15, 118, 110, 0.12);
+  color: var(--teal-deep);
 }
 
 .status-pill.is-assigned {
@@ -1160,15 +1160,20 @@ code {
 }
 
 .status-pill.is-delivered {
-  background: rgba(22, 35, 29, 0.1);
-  color: var(--ink);
+  background: rgba(15, 118, 110, 0.16);
+  color: var(--teal-deep);
+}
+
+.status-pill.is-cancelled {
+  background: rgba(201, 94, 54, 0.12);
+  color: #9f3f1a;
 }
 
 .order-meta-grid,
 .order-address-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
 }
 
 .order-address-grid {
@@ -1178,10 +1183,10 @@ code {
 .order-meta-grid > div,
 .order-address-card {
   display: grid;
-  gap: 6px;
+  gap: 5px;
   min-width: 0;
-  padding: 12px 14px;
-  border-radius: 18px;
+  padding: 10px 12px;
+  border-radius: 16px;
   border: 1px solid rgba(22, 35, 29, 0.08);
   background: rgba(255, 255, 255, 0.68);
 }
@@ -1198,7 +1203,7 @@ code {
 
 .order-meta-grid strong {
   font-family: var(--heading);
-  font-size: 0.96rem;
+  font-size: 0.94rem;
   overflow-wrap: anywhere;
   word-break: break-word;
 }
@@ -1220,6 +1225,12 @@ code {
 
 .order-card__button {
   min-height: 44px;
+}
+
+.order-card__button--danger {
+  border-color: rgba(201, 94, 54, 0.24);
+  background: rgba(201, 94, 54, 0.08);
+  color: #9f3f1a;
 }
 
 .placeholder-panel,

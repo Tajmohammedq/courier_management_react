@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { ActiveOrdersPanel } from '../components/dashboard/ActiveOrdersPanel';
 import { AppShell } from '../components/dashboard/AppShell';
 import { BookCourierPanel } from '../components/dashboard/BookCourierPanel';
+import { CancelledOrdersPanel } from '../components/dashboard/CancelledOrdersPanel';
+import { CompletedOrdersPanel } from '../components/dashboard/CompletedOrdersPanel';
 import { PlaceholderPanel } from '../components/dashboard/PlaceholderPanel';
 import { dashboardContent } from '../content/dashboardContent';
 import type { AuthRole } from '../types/auth';
@@ -25,6 +27,14 @@ export function DashboardPage({ role }: DashboardPageProps) {
 
     if (role === 'user' && activeServiceId === 'active-orders') {
       return <ActiveOrdersPanel />;
+    }
+
+    if (role === 'user' && activeServiceId === 'completed-orders') {
+      return <CompletedOrdersPanel />;
+    }
+
+    if (role === 'user' && activeServiceId === 'cancelled-orders') {
+      return <CancelledOrdersPanel />;
     }
 
     return (

@@ -1,5 +1,6 @@
 import { apiRequest } from './apiClient';
 import type {
+  CancelledOrder,
   CancelledOrderPayload,
   CourierRouteOption,
   CourierRouteQuote,
@@ -123,6 +124,17 @@ export async function fetchUserActiveOrders(email: string, signal?: AbortSignal)
   );
 }
 
+export async function fetchUserCompletedOrders(email: string, signal?: AbortSignal) {
+  return (
+    (await apiRequest<UserOrder[]>({
+      target: 'spring',
+      path: `/user/getcompletedorders/${encodeURIComponent(email)}`,
+      auth: true,
+      signal,
+    })) || []
+  );
+}
+
 export async function saveCancelledOrder(payload: CancelledOrderPayload) {
   await apiRequest<void>({
     target: 'spring',
@@ -131,6 +143,17 @@ export async function saveCancelledOrder(payload: CancelledOrderPayload) {
     body: payload,
     auth: true,
   });
+}
+
+export async function fetchUserCancelledOrders(email: string, signal?: AbortSignal) {
+  return (
+    (await apiRequest<CancelledOrder[]>({
+      target: 'spring',
+      path: `/user/getcancelledorders/${encodeURIComponent(email)}`,
+      auth: true,
+      signal,
+    })) || []
+  );
 }
 
 export async function removeUserOrder(trackingNumber: number) {
