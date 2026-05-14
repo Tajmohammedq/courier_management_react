@@ -1,23 +1,15 @@
 import { useEffect, useState } from 'react';
-import {
-  fetchUserActiveOrders,
-  removeTakenOrder,
-  removeUserOrder,
-  saveCancelledOrder,
-} from '../../api/courierApi';
+import { fetchUserCompletedOrders } from '../../api/courierApi';
 import { useAuth } from '../../hooks/useAuth';
 import type { UserOrder } from '../../types/dashboard';
 import { ErrorState } from './ErrorState';
 import { mapUserStatus } from './orderStatus';
 
-export function ActiveOrdersPanel() {
+export function CompletedOrdersPanel() {
   const { session } = useAuth();
   const [orders, setOrders] = useState<UserOrder[]>([]);
   const [loadError, setLoadError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-  const [actionMessage, setActionMessage] = useState('');
-  const [actionMessageTone, setActionMessageTone] = useState<'success' | 'error'>('success');
-  const [processingTrackingNumber, setProcessingTrackingNumber] = useState<number | null>(null);
 
   useEffect(() => {
     const sessionEmail = session?.email;
@@ -30,7 +22,6 @@ export function ActiveOrdersPanel() {
     }
 
     const currentEmail = sessionEmail;
-
     const controller = new AbortController();
 
     async function loadOrders() {
@@ -38,7 +29,7 @@ export function ActiveOrdersPanel() {
       setLoadError('');
 
       try {
-        const nextOrders = await fetchUserActiveOrders(currentEmail, controller.signal);
+        const nextOrders = await fetchUserCompletedOrders(currentEmail, controller.signal);
         setOrders(nextOrders);
       } catch (error) {
         if (!controller.signal.aborted) {
@@ -46,7 +37,7 @@ export function ActiveOrdersPanel() {
           setLoadError(
             error instanceof Error
               ? error.message
-              : 'We could not load your active courier orders right now.',
+              : 'We could not load your completed courier orders right now.',
           );
         }
       } finally {
@@ -62,85 +53,25 @@ export function ActiveOrdersPanel() {
   }, [session?.email]);
 
   if (loadError && !orders.length) {
-    return <ErrorState title="Active orders are unavailable" message={loadError} />;
-  }
-
-  async function handleCancel(order: UserOrder) {
-    const displayStatus = mapUserStatus(order);
-
-    if (displayStatus.label === 'Out for delivery') {
-      setActionMessageTone('error');
-      setActionMessage(
-        `Order #${order.trackingNumber} is already out for delivery, so it can no longer be canceled online.`,
-      );
-      return;
-    }
-
-    setActionMessage('');
-    setProcessingTrackingNumber(order.trackingNumber);
-
-    try {
-      await saveCancelledOrder({
-        trackingNumber: order.trackingNumber,
-        email: order.email,
-        from_place: order.from_place,
-        from_name: order.from_name,
-        from_phone: order.from_phone,
-        from_address: order.from_address,
-        to_place: order.to_place,
-        to_name: order.to_name,
-        to_phone: order.to_phone,
-        to_address: order.to_address,
-        item: order.item,
-        status: order.status,
-        order_status: order.order_status,
-      });
-
-      if (order.order_status.trim().toLowerCase() === 'taken') {
-        await removeTakenOrder(order.trackingNumber);
-      }
-
-      await removeUserOrder(order.trackingNumber);
-      setOrders((currentOrders) =>
-        currentOrders.filter((currentOrder) => currentOrder.trackingNumber !== order.trackingNumber),
-      );
-      setActionMessageTone('success');
-      setActionMessage(
-        `Order #${order.trackingNumber} was canceled successfully and removed from your active orders.`,
-      );
-    } catch (error) {
-      setActionMessageTone('error');
-      setActionMessage(
-        error instanceof Error
-          ? error.message
-          : 'We could not cancel this order right now. Please try again.',
-      );
-    } finally {
-      setProcessingTrackingNumber(null);
-    }
+    return <ErrorState title="Completed orders are unavailable" message={loadError} />;
   }
 
   return (
     <section className="service-card orders-panel">
       <div className="service-card__header orders-panel__header">
         <div>
-          <span className="section-label">Active orders</span>
+          <span className="section-label">Completed orders</span>
         </div>
       </div>
 
-      {isLoading ? <p className="panel-note">Loading your active orders...</p> : null}
+      {isLoading ? <p className="panel-note">Loading your completed orders...</p> : null}
       {loadError && orders.length ? <p className="form-message is-error">{loadError}</p> : null}
-      {actionMessage ? (
-        <p className={`form-message ${actionMessageTone === 'success' ? 'is-success' : 'is-error'}`}>
-          {actionMessage}
-        </p>
-      ) : null}
 
       {!isLoading && !orders.length ? (
         <div className="orders-empty-state">
-          <span className="section-label">Nothing active</span>
-          <h4>No active orders right now</h4>
-          <p>New bookings will appear here until they move into completed deliveries.</p>
+          <span className="section-label">Nothing completed</span>
+          <h4>No delivered orders yet</h4>
+          <p>Completed shipments will appear here once the courier marks them as delivered.</p>
         </div>
       ) : null}
 
@@ -193,17 +124,6 @@ export function ActiveOrdersPanel() {
                     <span className="section-label">Receiver address</span>
                     <p>{order.to_address}</p>
                   </div>
-                </div>
-
-                <div className="order-card__actions">
-                  <button
-                    type="button"
-                    className="ghost-button order-card__button order-card__button--danger"
-                    onClick={() => void handleCancel(order)}
-                    disabled={processingTrackingNumber === order.trackingNumber}
-                  >
-                    {processingTrackingNumber === order.trackingNumber ? 'Cancelling...' : 'Cancel order'}
-                  </button>
                 </div>
               </article>
             );
