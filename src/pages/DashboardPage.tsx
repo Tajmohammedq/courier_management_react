@@ -5,6 +5,7 @@ import { BookCourierPanel } from '../components/dashboard/BookCourierPanel';
 import { CancelledOrdersPanel } from '../components/dashboard/CancelledOrdersPanel';
 import { CompletedOrdersPanel } from '../components/dashboard/CompletedOrdersPanel';
 import { PlaceholderPanel } from '../components/dashboard/PlaceholderPanel';
+import { ProfilePanel } from '../components/dashboard/ProfilePanel';
 import { dashboardContent } from '../content/dashboardContent';
 import type { AuthRole } from '../types/auth';
 import type { DashboardServiceId } from '../types/dashboard';
@@ -35,6 +36,10 @@ export function DashboardPage({ role }: DashboardPageProps) {
 
     if (role === 'user' && activeServiceId === 'cancelled-orders') {
       return <CancelledOrdersPanel />;
+    }
+
+    if (role === 'user' && activeServiceId === 'profile') {
+      return <ProfilePanel />;
     }
 
     return (
