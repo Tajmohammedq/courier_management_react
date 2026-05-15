@@ -529,11 +529,12 @@ code {
 }
 
 .dashboard-shell {
-  min-height: 100svh;
+  height: 100svh;
   display: grid;
   grid-template-columns: 240px minmax(0, 1fr);
   gap: 14px;
   padding: 14px;
+  overflow: hidden;
 }
 
 .sidebar,
@@ -550,6 +551,11 @@ code {
   flex-direction: column;
   gap: 18px;
   padding: 18px;
+  position: sticky;
+  top: 14px;
+  align-self: start;
+  height: calc(100svh - 28px);
+  overflow: hidden;
   border-radius: 22px;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0.16)),
@@ -637,6 +643,15 @@ code {
   display: grid;
   gap: 12px;
   align-content: start;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.dashboard-stage::-webkit-scrollbar {
+  width: 0;
+  height: 0;
 }
 
 .dashboard-header,
@@ -1169,6 +1184,11 @@ code {
   color: #9f3f1a;
 }
 
+.status-pill.is-available {
+  background: rgba(185, 120, 35, 0.12);
+  color: #8b5a17;
+}
+
 .order-meta-grid,
 .order-address-grid {
   display: grid;
@@ -1397,6 +1417,12 @@ code {
     grid-template-columns: 1fr;
   }
 
+  .sidebar {
+    position: sticky;
+    top: 12px;
+    height: auto;
+  }
+
   .service-grid,
   .dashboard-banner,
   .placeholder-panel {
@@ -1493,6 +1519,7 @@ code {
   }
 
   .dashboard-shell {
+    height: 100svh;
     padding: 12px;
   }
 

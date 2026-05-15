@@ -5,6 +5,7 @@ import type {
   CourierRouteOption,
   CourierRouteQuote,
   CreateCourierOrderPayload,
+  EmployeeTakenOrderPayload,
   UserOrder,
 } from '../types/dashboard';
 
@@ -133,6 +134,63 @@ export async function fetchUserCompletedOrders(email: string, signal?: AbortSign
       signal,
     })) || []
   );
+}
+
+export async function fetchEmployeeAvailableOrders(signal?: AbortSignal) {
+  return (
+    (await apiRequest<UserOrder[]>({
+      target: 'spring',
+      path: '/employee/getallorders',
+      auth: true,
+      signal,
+    })) || []
+  );
+}
+
+export async function claimEmployeeOrder(
+  order: UserOrder,
+  employeeEmail: string,
+  assignmentDate: string,
+) {
+  const takenOrderPayload: EmployeeTakenOrderPayload = {
+    trackingNumber: order.trackingNumber,
+    email: order.email,
+    from_place: order.from_place,
+    from_name: order.from_name,
+    from_phone: order.from_phone,
+    from_address: order.from_address,
+    to_place: order.to_place,
+    to_name: order.to_name,
+    to_phone: order.to_phone,
+    to_address: order.to_address,
+    item: order.item,
+    status: 'Assigned',
+    order_status: 'Taken',
+    employee_email: employeeEmail,
+    date: assignmentDate,
+  };
+
+  const updatedOrderPayload: UserOrder = {
+    ...order,
+    status: 'Assigned',
+    order_status: 'Taken',
+  };
+
+  await apiRequest<void>({
+    target: 'spring',
+    path: '/employee/takenorders',
+    method: 'POST',
+    body: [takenOrderPayload],
+    auth: true,
+  });
+
+  await apiRequest<void>({
+    target: 'spring',
+    path: '/employee/updateorder',
+    method: 'POST',
+    body: [updatedOrderPayload],
+    auth: true,
+  });
 }
 
 export async function saveCancelledOrder(payload: CancelledOrderPayload) {

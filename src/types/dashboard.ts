@@ -80,6 +80,24 @@ export type UserOrder = {
   date: string;
 };
 
+export type EmployeeTakenOrderPayload = {
+  trackingNumber: number;
+  email: string;
+  from_place: string;
+  from_name: string;
+  from_phone: string;
+  from_address: string;
+  to_place: string;
+  to_name: string;
+  to_phone: string;
+  to_address: string;
+  item: string;
+  status: string;
+  order_status: string;
+  employee_email: string;
+  date: string;
+};
+
 export type CancelledOrderPayload = {
   trackingNumber: number;
   email: string;
