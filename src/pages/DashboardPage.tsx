@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ActiveOrdersPanel } from '../components/dashboard/ActiveOrdersPanel';
+import { AvailableOrdersPanel } from '../components/dashboard/AvailableOrdersPanel';
 import { AppShell } from '../components/dashboard/AppShell';
 import { BookCourierPanel } from '../components/dashboard/BookCourierPanel';
 import { CancelledOrdersPanel } from '../components/dashboard/CancelledOrdersPanel';
@@ -40,6 +41,10 @@ export function DashboardPage({ role }: DashboardPageProps) {
 
     if (role === 'user' && activeServiceId === 'profile') {
       return <ProfilePanel />;
+    }
+
+    if (role === 'employee' && activeServiceId === 'available-orders') {
+      return <AvailableOrdersPanel />;
     }
 
     return (

@@ -47,6 +47,10 @@ function normalizePlace(value: string) {
   return value.trim().toLowerCase();
 }
 
+function sanitizePhoneInput(value: string) {
+  return value.replace(/\D/g, '').slice(0, 10);
+}
+
 function buildTodayLabel() {
   const now = new Date();
   const localDate = new Date(now.getTime() - now.getTimezoneOffset() * 60_000);
@@ -192,6 +196,19 @@ export function BookCourierPanel() {
       return;
     }
 
+    const pickupPhone = sanitizePhoneInput(form.pickupPhone);
+    const receiverPhone = sanitizePhoneInput(form.receiverPhone);
+
+    if (pickupPhone.length !== 10) {
+      setSubmitError('Pickup phone number must be exactly 10 digits.');
+      return;
+    }
+
+    if (receiverPhone.length !== 10) {
+      setSubmitError('Receiver phone number must be exactly 10 digits.');
+      return;
+    }
+
     if (!selectedRoute || !selectedParcelType) {
       setSubmitError('Choose a supported route and parcel type before continuing.');
       return;
@@ -203,12 +220,12 @@ export function BookCourierPanel() {
       bookingDate,
       fromPlace: selectedRoute.from_location.trim(),
       toPlace: selectedRoute.to_location.trim(),
-      pickupPhone: form.pickupPhone.trim(),
+      pickupPhone,
       pickupAddress: form.pickupAddress.trim(),
       parcelType: selectedParcelType.value,
       parcelLabel: selectedParcelType.label,
       receiverName: form.receiverName.trim(),
-      receiverPhone: form.receiverPhone.trim(),
+      receiverPhone,
       receiverAddress: form.receiverAddress.trim(),
     };
 
@@ -322,10 +339,14 @@ export function BookCourierPanel() {
                 <span>Pickup phone</span>
                 <input
                   type="tel"
-                  inputMode="tel"
+                  inputMode="numeric"
                   value={form.pickupPhone}
-                  onChange={(event) => updateField('pickupPhone', event.target.value)}
+                  onChange={(event) =>
+                    updateField('pickupPhone', sanitizePhoneInput(event.target.value))
+                  }
                   placeholder="Enter pickup phone number"
+                  maxLength={10}
+                  pattern="\d{10}"
                   required
                 />
               </label>
@@ -378,15 +399,19 @@ export function BookCourierPanel() {
 
                 <label className="field">
                   <span>Receiver phone</span>
-                  <input
-                    type="tel"
-                    inputMode="tel"
-                    value={form.receiverPhone}
-                    onChange={(event) => updateField('receiverPhone', event.target.value)}
-                    placeholder="Enter receiver phone number"
-                    required
-                  />
-                </label>
+                <input
+                  type="tel"
+                  inputMode="numeric"
+                  value={form.receiverPhone}
+                  onChange={(event) =>
+                    updateField('receiverPhone', sanitizePhoneInput(event.target.value))
+                  }
+                  placeholder="Enter receiver phone number"
+                  maxLength={10}
+                  pattern="\d{10}"
+                  required
+                />
+              </label>
 
                 <label className="field field--full">
                   <span>Receiver address</span>
