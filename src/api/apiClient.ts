@@ -1,4 +1,4 @@
-import { loadSession } from '../utils/authStorage';
+import { clearSession, loadSession } from '../utils/authStorage';
 
 const SPRING_API_URL =
   import.meta.env.VITE_SPRING_API_URL?.trim() || 'http://localhost:9090';
@@ -18,6 +18,14 @@ type ApiRequestOptions = {
 
 function getBaseUrl(target: ApiTarget) {
   return target === 'spring' ? SPRING_API_URL : MVC_API_URL;
+}
+
+function expireSessionAndRedirect() {
+  clearSession();
+
+  if (typeof window !== 'undefined' && window.location.pathname !== '/') {
+    window.location.replace('/');
+  }
 }
 
 async function parseResponse<T>(response: Response) {
@@ -52,6 +60,7 @@ export async function apiRequest<T>({
     const session = loadSession();
 
     if (!session?.accessToken) {
+      expireSessionAndRedirect();
       throw new Error('Your session is missing. Please sign in again.');
     }
 
@@ -66,6 +75,11 @@ export async function apiRequest<T>({
   });
 
   const data = await parseResponse<T & { message?: string }>(response);
+
+  if (auth && (response.status === 401 || response.status === 403)) {
+    expireSessionAndRedirect();
+    throw new Error('Your session has expired. Please sign in again.');
+  }
 
   if (!response.ok) {
     throw new Error(data?.message || 'Something went wrong while contacting the server.');
