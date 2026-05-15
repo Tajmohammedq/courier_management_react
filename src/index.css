@@ -1196,6 +1196,15 @@ code {
   gap: 10px;
 }
 
+.order-meta-grid--triple {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.order-meta-grid--employee {
+  grid-template-columns: minmax(240px, 1fr) minmax(240px, 1fr) minmax(200px, 0.8fr);
+  align-items: start;
+}
+
 .order-address-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
@@ -1241,6 +1250,49 @@ code {
 .order-card__actions {
   display: flex;
   justify-content: flex-end;
+}
+
+.orders-panel--compact .orders-grid {
+  gap: 12px;
+}
+
+.orders-panel--compact .order-card {
+  gap: 8px;
+  padding: 12px 14px;
+}
+
+.orders-panel--compact .order-meta-grid > div,
+.orders-panel--compact .order-address-card {
+  padding: 9px 11px;
+}
+
+.orders-panel--compact .order-card__subline {
+  gap: 6px;
+}
+
+.orders-panel--compact .order-status-select {
+  min-width: 190px;
+}
+
+.order-status-select {
+  display: grid;
+  gap: 6px;
+  min-width: 220px;
+}
+
+.order-status-select span {
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.order-status-select select {
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(22, 35, 29, 0.12);
+  background: rgba(255, 255, 255, 0.86);
+  color: var(--ink);
+  font: inherit;
 }
 
 .order-card__button {
@@ -1445,6 +1497,14 @@ code {
 
   .order-meta-grid,
   .order-address-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .order-meta-grid--triple {
+    grid-template-columns: 1fr;
+  }
+
+  .order-meta-grid--employee {
     grid-template-columns: 1fr;
   }
 

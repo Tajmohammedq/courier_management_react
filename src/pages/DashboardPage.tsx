@@ -5,8 +5,10 @@ import { AppShell } from '../components/dashboard/AppShell';
 import { BookCourierPanel } from '../components/dashboard/BookCourierPanel';
 import { CancelledOrdersPanel } from '../components/dashboard/CancelledOrdersPanel';
 import { CompletedOrdersPanel } from '../components/dashboard/CompletedOrdersPanel';
+import { EmployeeCompletedDeliveriesPanel } from '../components/dashboard/EmployeeCompletedDeliveriesPanel';
 import { PlaceholderPanel } from '../components/dashboard/PlaceholderPanel';
 import { ProfilePanel } from '../components/dashboard/ProfilePanel';
+import { TakenOrdersPanel } from '../components/dashboard/TakenOrdersPanel';
 import { dashboardContent } from '../content/dashboardContent';
 import type { AuthRole } from '../types/auth';
 import type { DashboardServiceId } from '../types/dashboard';
@@ -45,6 +47,18 @@ export function DashboardPage({ role }: DashboardPageProps) {
 
     if (role === 'employee' && activeServiceId === 'available-orders') {
       return <AvailableOrdersPanel />;
+    }
+
+    if (role === 'employee' && activeServiceId === 'taken-orders') {
+      return <TakenOrdersPanel />;
+    }
+
+    if (role === 'employee' && activeServiceId === 'completed-deliveries') {
+      return <EmployeeCompletedDeliveriesPanel />;
+    }
+
+    if (role === 'employee' && activeServiceId === 'profile') {
+      return <ProfilePanel />;
     }
 
     return (
