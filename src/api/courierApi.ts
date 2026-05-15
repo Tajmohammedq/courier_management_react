@@ -5,6 +5,7 @@ import type {
   CourierRouteOption,
   CourierRouteQuote,
   CreateCourierOrderPayload,
+  EmployeeOrder,
   EmployeeTakenOrderPayload,
   UserOrder,
 } from '../types/dashboard';
@@ -147,6 +148,28 @@ export async function fetchEmployeeAvailableOrders(signal?: AbortSignal) {
   );
 }
 
+export async function fetchEmployeeTakenOrders(email: string, signal?: AbortSignal) {
+  return (
+    (await apiRequest<EmployeeOrder[]>({
+      target: 'spring',
+      path: `/employee/getpendingorders/${encodeURIComponent(email)}`,
+      auth: true,
+      signal,
+    })) || []
+  );
+}
+
+export async function fetchEmployeeCompletedOrders(email: string, signal?: AbortSignal) {
+  return (
+    (await apiRequest<EmployeeOrder[]>({
+      target: 'spring',
+      path: `/employee/employeecompletedorders/${encodeURIComponent(email)}`,
+      auth: true,
+      signal,
+    })) || []
+  );
+}
+
 export async function claimEmployeeOrder(
   order: UserOrder,
   employeeEmail: string,
@@ -189,6 +212,27 @@ export async function claimEmployeeOrder(
     path: '/employee/updateorder',
     method: 'POST',
     body: [updatedOrderPayload],
+    auth: true,
+  });
+}
+
+export async function updateEmployeeTakenOrderStatus(
+  trackingNumber: number,
+  status: string,
+  date: string,
+) {
+  const encodedStatus = encodeURIComponent(status);
+  const encodedDate = encodeURIComponent(date);
+
+  await apiRequest<void>({
+    target: 'spring',
+    path: `/employee/takenorderchangestatus/${trackingNumber}/${encodedStatus}/${encodedDate}`,
+    auth: true,
+  });
+
+  await apiRequest<void>({
+    target: 'spring',
+    path: `/employee/allorderschangestatus/${trackingNumber}/${encodedStatus}/${encodedDate}`,
     auth: true,
   });
 }
