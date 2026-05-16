@@ -26,12 +26,14 @@ export function AppShell({
 }: AppShellProps) {
   const { session, logout } = useAuth();
   const [displayName, setDisplayName] = useState('');
+  const [displayImage, setDisplayImage] = useState('');
   const sessionEmail = session?.email ?? '';
   const sessionRole = session?.role;
 
   useEffect(() => {
     if (!sessionEmail || !sessionRole) {
       setDisplayName('');
+      setDisplayImage('');
       return;
     }
 
@@ -45,9 +47,11 @@ export function AppShell({
         const profile = await fetchAccountProfile(role, email, controller.signal);
         const fullName = `${profile.firstname} ${profile.lastname}`.trim();
         setDisplayName(fullName || email);
+        setDisplayImage(profile.image || '');
       } catch {
         if (!controller.signal.aborted) {
           setDisplayName(email);
+          setDisplayImage('');
         }
       }
     }
@@ -93,9 +97,9 @@ export function AppShell({
 
           <div className="dashboard-toolbar">
             <div className="profile-chip">
-              <img src={emptyAvatar} alt="" />
+              <img src={displayImage || emptyAvatar} alt="" />
               <div>
-                <strong>{displayName || session?.email}</strong>
+                <strong>{displayName || 'Account'}</strong>
               </div>
             </div>
 

@@ -1,6 +1,9 @@
 import { apiRequest } from './apiClient';
 import type { AccountProfile, AccountProfileUpdatePayload, AuthRole } from '../types/auth';
 
+const MVC_API_URL =
+  import.meta.env.VITE_MVC_API_URL?.trim() || 'http://localhost:8080/courier_management2';
+
 const PROFILE_ENDPOINTS: Record<AuthRole, (email: string) => string> = {
   user: (email) => `/login/${encodeURIComponent(email)}`,
   employee: (email) => `/getemployeedetails/${encodeURIComponent(email)}`,
@@ -9,6 +12,16 @@ const PROFILE_ENDPOINTS: Record<AuthRole, (email: string) => string> = {
 const PROFILE_UPDATE_ENDPOINTS: Record<AuthRole, (email: string) => string> = {
   user: (email) => `/update/${encodeURIComponent(email)}`,
   employee: (email) => `/employeeupdate/${encodeURIComponent(email)}`,
+};
+
+const PROFILE_IMAGE_UPLOAD_ENDPOINTS: Record<AuthRole, (email: string) => string> = {
+  user: (email) => `/profile-image/${encodeURIComponent(email)}`,
+  employee: (email) => `/employee-profile-image/${encodeURIComponent(email)}`,
+};
+
+type ImageUploadResponse = {
+  imageUrl?: string;
+  message?: string;
 };
 
 export async function fetchAccountProfile(role: AuthRole, email: string, signal?: AbortSignal) {
@@ -39,6 +52,30 @@ export async function updateAccountProfile(
     method: 'POST',
     body: payload,
   });
+}
+
+export async function uploadAccountProfileImage(role: AuthRole, email: string, file: File) {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const response = await fetch(`${MVC_API_URL}${PROFILE_IMAGE_UPLOAD_ENDPOINTS[role](email)}`, {
+    method: 'POST',
+    body: formData,
+  });
+
+  let data: ImageUploadResponse | null = null;
+
+  try {
+    data = (await response.json()) as ImageUploadResponse;
+  } catch {
+    data = null;
+  }
+
+  if (!response.ok || !data?.imageUrl) {
+    throw new Error(data?.message || 'We could not upload your profile photo right now.');
+  }
+
+  return data.imageUrl;
 }
 
 export async function verifyAccountPassword(email: string, password: string) {

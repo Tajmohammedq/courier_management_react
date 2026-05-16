@@ -1,6 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ChangeEvent } from 'react';
+import { validateProfileImage } from '../../api/mediaApi';
 import {
   fetchAccountProfile,
+  uploadAccountProfileImage,
   updateAccountProfile,
   verifyAccountPassword,
 } from '../../api/profileApi';
@@ -43,6 +45,8 @@ export function ProfilePanel() {
   const [loadError, setLoadError] = useState('');
   const [formMessage, setFormMessage] = useState('');
   const [formMessageTone, setFormMessageTone] = useState<'success' | 'error'>('success');
+  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
+  const [previewImageUrl, setPreviewImageUrl] = useState('');
 
   useEffect(() => {
     if (!sessionEmail || !sessionRole) {
@@ -106,6 +110,8 @@ export function ProfilePanel() {
 
     setForm(toFormState(profile));
     setFormMessage('');
+    setSelectedImageFile(null);
+    setPreviewImageUrl('');
     setIsEditing(true);
   }
 
@@ -115,7 +121,49 @@ export function ProfilePanel() {
     }
 
     setFormMessage('');
+    setSelectedImageFile(null);
+    setPreviewImageUrl('');
     setIsEditing(false);
+  }
+
+  useEffect(() => {
+    return () => {
+      if (previewImageUrl) {
+        URL.revokeObjectURL(previewImageUrl);
+      }
+    };
+  }, [previewImageUrl]);
+
+  function handleImageSelection(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    setFormMessage('');
+
+    try {
+      validateProfileImage(file);
+
+      if (previewImageUrl) {
+        URL.revokeObjectURL(previewImageUrl);
+      }
+
+      setSelectedImageFile(file);
+      setPreviewImageUrl(URL.createObjectURL(file));
+    } catch (error) {
+      setSelectedImageFile(null);
+      setPreviewImageUrl('');
+      setFormMessageTone('error');
+      setFormMessage(
+        error instanceof Error
+          ? error.message
+          : 'We could not use that image file right now.',
+      );
+    } finally {
+      event.target.value = '';
+    }
   }
 
   async function handleSave(event: React.FormEvent<HTMLFormElement>) {
@@ -131,6 +179,8 @@ export function ProfilePanel() {
     setFormMessage('');
 
     try {
+      let imageUrl = profile.image || '';
+
       const wantsPasswordChange =
         form.currentPassword.trim() !== '' ||
         form.newPassword.trim() !== '' ||
@@ -159,12 +209,16 @@ export function ProfilePanel() {
         }
       }
 
+      if (selectedImageFile) {
+        imageUrl = await uploadAccountProfileImage(sessionRole, profile.email, selectedImageFile);
+      }
+
       await updateAccountProfile(sessionRole, profile.email, {
         firstname: form.firstname.trim(),
         lastname: form.lastname.trim(),
         email: profile.email,
         phone: form.phone.trim(),
-        image: profile.image || '',
+        image: imageUrl,
         password: form.newPassword.trim(),
       });
 
@@ -174,10 +228,16 @@ export function ProfilePanel() {
         lastname: form.lastname.trim(),
         email: profile.email,
         phone: form.phone.trim(),
+        image: imageUrl,
       };
 
       setProfile(nextProfile);
       setForm(toFormState(nextProfile));
+      setSelectedImageFile(null);
+      if (previewImageUrl) {
+        URL.revokeObjectURL(previewImageUrl);
+      }
+      setPreviewImageUrl('');
       setIsEditing(false);
       setFormMessageTone('success');
       setFormMessage('Profile updated successfully.');
@@ -221,136 +281,144 @@ export function ProfilePanel() {
 
       {profile && form ? (
         <form className="profile-layout" onSubmit={handleSave}>
-          <section className="profile-overview">
-            <img src={emptyAvatar} alt="" className="profile-hero__avatar" />
-            <div className="profile-overview__body">
-              <div className="profile-hero__copy">
-                <span className="section-label">Account overview</span>
+          <section className="profile-card">
+            <div className="profile-card__summary">
+              <div className="profile-hero__media">
+                <img
+                  src={previewImageUrl || profile.image || emptyAvatar}
+                  alt=""
+                  className="profile-hero__avatar"
+                />
+                {isEditing ? (
+                  <label className="ghost-button profile-image-button">
+                    Change photo
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="profile-image-input"
+                      onChange={handleImageSelection}
+                    />
+                  </label>
+                ) : null}
+              </div>
+
+              <div className="profile-hero__copy profile-hero__copy--stacked">
                 <strong>{`${profile.firstname} ${profile.lastname}`.trim() || profile.email}</strong>
-                <span>{profile.email}</span>
-              </div>
-
-              <div className="profile-overview__meta">
-                <div>
-                  <span>Phone</span>
-                  <strong>{profile.phone || 'Not provided'}</strong>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <section className="profile-details">
-            <div className="profile-details__header">
-              <div>
-                <span className="section-label">Personal details</span>
+                <span>Account settings</span>
               </div>
             </div>
 
-            <div className="profile-grid">
-              <label className="field">
-                <span>First name</span>
-                {isEditing ? (
-                  <input
-                    value={form.firstname}
-                    onChange={(event) => updateField('firstname', event.target.value)}
-                    required
-                  />
-                ) : (
-                  <div className="profile-value">{profile.firstname || 'Not provided'}</div>
-                )}
-              </label>
+            <div className="profile-card__details">
+              <div className="profile-card__details-head">
+                <span className="section-label">Profile details</span>
+              </div>
 
-              <label className="field">
-                <span>Last name</span>
-                {isEditing ? (
-                  <input
-                    value={form.lastname}
-                    onChange={(event) => updateField('lastname', event.target.value)}
-                    required
-                  />
-                ) : (
-                  <div className="profile-value">{profile.lastname || 'Not provided'}</div>
-                )}
-              </label>
+              <div className="profile-grid">
+                <label className="field">
+                  <span>First name</span>
+                  {isEditing ? (
+                    <input
+                      value={form.firstname}
+                      onChange={(event) => updateField('firstname', event.target.value)}
+                      required
+                    />
+                  ) : (
+                    <div className="profile-value">{profile.firstname || 'Not provided'}</div>
+                  )}
+                </label>
 
-              <label className="field">
-                <span>Email</span>
-                {isEditing ? (
-                  <input value={form.email} disabled readOnly />
-                ) : (
-                  <div className="profile-value">{profile.email}</div>
-                )}
-              </label>
+                <label className="field">
+                  <span>Last name</span>
+                  {isEditing ? (
+                    <input
+                      value={form.lastname}
+                      onChange={(event) => updateField('lastname', event.target.value)}
+                      required
+                    />
+                  ) : (
+                    <div className="profile-value">{profile.lastname || 'Not provided'}</div>
+                  )}
+                </label>
 
-              <label className="field">
-                <span>Phone number</span>
-                {isEditing ? (
-                  <input
-                    value={form.phone}
-                    onChange={(event) => updateField('phone', event.target.value)}
-                    required
-                  />
-                ) : (
-                  <div className="profile-value">{profile.phone || 'Not provided'}</div>
-                )}
-              </label>
-            </div>
+                <label className="field">
+                  <span>Email</span>
+                  {isEditing ? (
+                    <input value={form.email} disabled readOnly />
+                  ) : (
+                    <div className="profile-value">{profile.email}</div>
+                  )}
+                </label>
 
-            {isEditing ? (
-              <>
-                <div className="profile-password-section">
-                  <div>
-                    <span className="section-label">Security</span>
-                    <p className="panel-note profile-note">
-                      Leave the password fields blank if you only want to update your profile details.
-                    </p>
+                <label className="field">
+                  <span>Phone number</span>
+                  {isEditing ? (
+                    <input
+                      value={form.phone}
+                      onChange={(event) => updateField('phone', event.target.value)}
+                      required
+                    />
+                  ) : (
+                    <div className="profile-value">{profile.phone || 'Not provided'}</div>
+                  )}
+                </label>
+              </div>
+
+              {isEditing ? (
+                <>
+                  <div className="profile-password-section">
+                    <div>
+                      <span className="section-label">Security</span>
+                      <p className="panel-note profile-note">
+                        Leave the password fields blank if you only want to update your profile details.
+                      </p>
+                    </div>
+
+                    <div className="profile-password-grid">
+                      <label className="field">
+                        <span>Current password</span>
+                        <input
+                          type="password"
+                          value={form.currentPassword}
+                          onChange={(event) => updateField('currentPassword', event.target.value)}
+                        />
+                      </label>
+
+                      <label className="field">
+                        <span>New password</span>
+                        <input
+                          type="password"
+                          value={form.newPassword}
+                          onChange={(event) => updateField('newPassword', event.target.value)}
+                        />
+                      </label>
+
+                      <label className="field field--full">
+                        <span>Confirm new password</span>
+                        <input
+                          type="password"
+                          value={form.confirmPassword}
+                          onChange={(event) => updateField('confirmPassword', event.target.value)}
+                        />
+                      </label>
+                    </div>
                   </div>
 
-                  <div className="profile-password-grid">
-                    <label className="field">
-                      <span>Current password</span>
-                      <input
-                        type="password"
-                        value={form.currentPassword}
-                        onChange={(event) => updateField('currentPassword', event.target.value)}
-                      />
-                    </label>
-
-                    <label className="field">
-                      <span>New password</span>
-                      <input
-                        type="password"
-                        value={form.newPassword}
-                        onChange={(event) => updateField('newPassword', event.target.value)}
-                      />
-                    </label>
-
-                    <label className="field field--full">
-                      <span>Confirm new password</span>
-                      <input
-                        type="password"
-                        value={form.confirmPassword}
-                        onChange={(event) => updateField('confirmPassword', event.target.value)}
-                      />
-                    </label>
+                  <div className="profile-actions">
+                    <button
+                      type="button"
+                      className="ghost-button"
+                      onClick={handleCancelEdit}
+                      disabled={isSaving}
+                    >
+                      Cancel
+                    </button>
+                    <button type="submit" className="primary-button" disabled={isSaving}>
+                      {isSaving ? 'Saving changes...' : 'Save changes'}
+                    </button>
                   </div>
-                </div>
-
-                <div className="profile-actions">
-                  <button
-                    type="button"
-                    className="ghost-button"
-                    onClick={handleCancelEdit}
-                    disabled={isSaving}
-                  >
-                    Cancel
-                  </button>
-                  <button type="submit" className="primary-button" disabled={isSaving}>
-                    {isSaving ? 'Saving changes...' : 'Save changes'}
-                  </button>
-                </div>
-              </>
-            ) : null}
+                </>
+              ) : null}
+            </div>
           </section>
         </form>
       ) : null}
