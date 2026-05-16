@@ -1,73 +1,67 @@
-# React + TypeScript + Vite
+# Courier Management React
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React frontend for the courier management system. This project provides separate user and employee dashboard flows on top of the MVC and Spring Boot backends.
 
-Currently, two official plugins are available:
+## Tech Stack
+- React
+- TypeScript
+- Vite
+- React Router
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## What This Project Handles
 
-## React Compiler
+### User Features
+- Login and registration
+- Book Courier
+- Payment flow
+- Active Orders
+- Completed Orders
+- Cancelled Orders
+- Profile update
+- Password change
+- Profile image upload through backend
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### Employee Features
+- Login
+- Available Orders
+- Taken Orders
+- Completed Deliveries
+- Profile update
+- Password change
+- Profile image upload through backend
 
-## Expanding the ESLint configuration
+## Default Local Runtime
+- Frontend URL: `http://localhost:3333`
+- Spring Boot API: `http://localhost:9090`
+- MVC API: `http://localhost:8080/courier_management2`
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Environment Variables
+Create a local `.env` file from `.env.example`:
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```env
+VITE_SPRING_API_URL=http://localhost:9090
+VITE_MVC_API_URL=http://localhost:8080/courier_management2
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Install
+```bash
+npm install
 ```
+
+## Run
+```bash
+npm run dev
+```
+
+The Vite server is configured to run on port `3333`.
+
+## Build
+```bash
+npm run build
+```
+
+## Notes
+- This frontend depends on both backend repositories running locally.
+- Authentication is JWT-based.
+- Unauthorized API responses redirect the user back to the login screen.
+- Profile image upload is handled by the MVC backend, not by direct client-to-cloud upload.
